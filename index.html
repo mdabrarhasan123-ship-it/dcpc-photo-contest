@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DCPC Weekly Photo Contest</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/*
+=========== SETUP ===========
+1) Firebase Console: Firestore + Authentication (Email/Password) enable koro. Auth > Users e nijer admin email/password banao.
+2) Cloudinary: free account, Settings > Upload > Unsigned upload preset banao. CLOUD_NAME ar PRESET niche boshao.
+   (Note: baki chobi Firestore theke muche jay, kintu Cloudinary te file thake. Free plan e jothesto jayga ache, chaile Cloudinary Media Library theke mane mane clear koro.)
+3) Firestore Rules (deadline server e enforce hoy, browser bypass kore lav nai):
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    // Dhaka time (UTC+6). Shonibar=0, Robibar=1 ... Brihospotibar=5, Shukrobar=6
+    function dhakaDow() { return (math.floor((request.time.toMillis() + 21600000) / 86400000) - 2) % 7; }
+    function hasCfg()   { return exists(/databases/$(db)/documents/config/week); }
+    function cfg()      { return get(/databases/$(db)/documents/config/week).data; }
+    function inCfg()    { return hasCfg() && 'startAt' in cfg() && cfg().startAt <= request.time && request.time < cfg().endAt; }
+    // admin panel theke date set kora thakle oita, na hole auto: Shonibar-Brihospotibar khola, Shukrobar bondho
+    function isOpen()   { return inCfg()
+                            ? (request.time < cfg().closeAt && request.resource.data.weekId == cfg().start)
+                            : dhakaDow() != 6; }
+
+    match /config/{d} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    match /submissions/{id} {
+      allow create: if isOpen()
+        && request.resource.data.winner == false
+        && request.resource.data.keys().hasOnly(['weekId','name','roll','group','section','caption','url','winner','createdAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() < 60
+        && request.resource.data.roll is string && request.resource.data.roll.size() < 15
+        && request.resource.data.group in ['science','business','humanities']
+        && request.resource.data.section is string && request.resource.data.section.size() < 3
+        && id == request.resource.data.weekId + '_' + request.resource.data.roll;
+      allow read, update, delete: if request.auth != null;
+    }
+    match /winners/{id} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
+4) Admin panel: yoursite.com/#/admin
+=============================
+*/
+:root{--p:#6b3fa0;--p2:#8b5cc7;--bg:#f4effb;--red:#d62828;--ink:#1d1030;--gold:#f5b800}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hind Siliguri',sans-serif;background:linear-gradient(180deg,#fff,var(--bg) 40%,#c9b0ea);min-height:100vh;color:var(--ink);background-attachment:fixed;overflow-x:hidden}
+.floaters{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.floaters span{position:absolute;bottom:-60px;font-size:26px;opacity:.18;animation:rise linear infinite}
+@keyframes rise{to{transform:translateY(-115vh) rotate(360deg)}}
+.wrap{max-width:560px;margin:0 auto;padding:20px 16px 60px;position:relative;z-index:1}
+.logos{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.logos img{height:64px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 4px #0002)}
+.logos .lg-l{height:72px;mix-blend-mode:multiply}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:8px}
+.top b{font-size:14px;color:var(--p)}
+h1{text-align:center;font-size:34px;color:var(--p);line-height:1.2}
+.ribbon{display:block;width:fit-content;margin:8px auto;background:var(--red);color:#fff;padding:2px 22px;border-radius:6px;font-size:26px;font-weight:700;transform:rotate(-2deg);box-shadow:0 6px 14px #d6282855;animation:wob 3s ease-in-out infinite}
+@keyframes wob{50%{transform:rotate(2deg) scale(1.04)}}
+.sub{text-align:center;font-size:24px;font-weight:700;color:var(--p);margin-bottom:6px}
+.range{text-align:center;font-weight:600;margin:10px 0 14px;color:#4a3270}
+.theme{background:linear-gradient(90deg,var(--p),var(--p2));color:#fff;border-radius:16px;padding:12px 16px;text-align:center;margin-bottom:16px;font-weight:600;box-shadow:0 8px 20px #6b3fa044}
+.theme b{display:block;font-size:22px}
+.timer{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.timer div{background:#fff;border-radius:14px;text-align:center;padding:10px 0;box-shadow:0 6px 16px #6b3fa022}
+.timer b{display:block;font-size:28px;color:var(--p);font-variant-numeric:tabular-nums}
+.timer small{font-size:12px;color:#7a6a92}
+.film{background:#150c20;border-radius:14px;position:relative;margin-bottom:10px;box-shadow:0 10px 26px #150c2088}
+.film::before,.film::after{content:"";position:absolute;left:0;right:0;height:8px;background:repeating-linear-gradient(90deg,transparent 0 8px,#ffffffcc 8px 16px,transparent 16px 24px);opacity:.55;z-index:2;pointer-events:none}
+.film::before{top:5px}.film::after{bottom:5px}
+.reel{display:flex;gap:10px;overflow-x:auto;padding:24px 14px;scroll-snap-type:x mandatory;scrollbar-width:none}
+.reel::-webkit-scrollbar{display:none}
+.fr{flex:0 0 86px;height:118px;background:#2d2140;border-radius:8px;color:#fff;text-align:center;padding-top:12px;cursor:pointer;scroll-snap-align:center;transition:.3s;border:2px solid #4a3a63;position:relative;user-select:none;-webkit-tap-highlight-color:transparent}
+.fr i{display:block;font-style:normal;font-size:30px;margin-bottom:2px}
+.fr b{display:block;font-size:15px}.fr small{display:block;font-size:20px;font-weight:700}
+.fr:hover{transform:translateY(-6px) rotate(-2deg)}
+.fr.past{opacity:.45;filter:grayscale(1)}
+.fr.now{border-color:var(--gold);background:linear-gradient(160deg,#6b3fa0,#8b5cc7);transform:scale(1.08);box-shadow:0 0 20px var(--gold);animation:glow 2s infinite}
+@keyframes glow{50%{box-shadow:0 0 34px var(--gold)}}
+.fr.sel{outline:3px solid #fff;outline-offset:2px}
+.fr.mark::after{content:"";position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;background:var(--red)}
+.fi{background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:18px;font-weight:600;text-align:center;min-height:50px;box-shadow:0 6px 16px #6b3fa022;transition:.2s}
+.poster{background:linear-gradient(160deg,#fff 0,#e5d6f7 100%);border:2px solid var(--p2);border-radius:22px;padding:18px;text-align:center;margin-bottom:18px;box-shadow:0 10px 30px #6b3fa033;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.025)}}
+.poster .l{font-size:24px;font-weight:700}
+.poster .n{font-size:110px;line-height:1;font-weight:700;color:var(--p)}
+.poster .n small{font-size:34px;color:var(--ink);margin-left:6px;border:3px solid var(--red);border-radius:50%;padding:2px 16px;display:inline-block;transform:rotate(-4deg)}
+.poster.hot{border-color:var(--red)}
+.card{background:#fff;border-radius:20px;padding:20px;box-shadow:0 8px 26px #6b3fa022;margin-bottom:18px}
+label{display:block;font-weight:600;margin:12px 0 5px;font-size:14px}
+input,textarea,select{width:100%;padding:12px 14px;border:1.5px solid #d9c9ef;border-radius:12px;font:inherit;background:#fcfaff}
+input:focus,textarea:focus{outline:2px solid var(--p2)}
+button{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:12px 18px;font-weight:700;background:var(--p);color:#fff;transition:.15s}
+button:active{transform:scale(.96)}
+button:disabled{opacity:.5}
+.full{width:100%;margin-top:18px;font-size:17px}
+.drop{border:2px dashed var(--p2);border-radius:14px;padding:18px;text-align:center;color:var(--p);cursor:pointer;background:#faf6ff}
+.drop:hover{background:#f1e7ff}
+.drop img{max-width:100%;max-height:260px;border-radius:10px;display:block;margin:auto}
+.msg{margin-top:12px;padding:12px;border-radius:12px;font-weight:600;text-align:center;display:none}
+.msg.ok{display:block;background:#e3f8e7;color:#17692b}.msg.err{display:block;background:#fde4e4;color:#a11}
+.closed{text-align:center;font-weight:700;color:var(--red);padding:14px}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:50}
+#flash.go{animation:fl .6s}
+@keyframes fl{0%{opacity:.95}100%{opacity:0}}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:60}
+
+/* group / section chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:#f1e7ff;color:var(--p);border:2px solid transparent;padding:9px 15px;border-radius:999px;font-size:15px}
+.chip:hover{border-color:var(--p2)}
+.chip.on{background:var(--p);color:#fff;transform:scale(1.07);box-shadow:0 6px 14px #6b3fa055}
+.chip[data-g=science].on{background:#1677c9}
+.chip[data-g=business].on{background:#d98a00}
+.chip[data-g=humanities].on{background:#1f9d55}
+.chip.sc{min-width:46px;text-align:center;animation:chipin .4s both}
+@keyframes chipin{from{opacity:0;transform:translateY(14px) scale(.5)}}
+#secWrap{animation:chipin .35s both}
+.bd{display:inline-block;font-size:12px;font-weight:700;color:#fff;padding:2px 9px;border-radius:999px;vertical-align:middle}
+.bd.science{background:#1677c9}.bd.business{background:#d98a00}.bd.humanities{background:#1f9d55}
+
+/* winner reveal */
+.stage-card{background:linear-gradient(160deg,#2a1450,#6b3fa0);color:#fff;border-radius:24px;padding:22px 16px;margin-bottom:18px;text-align:center;box-shadow:0 14px 40px #2a145099;position:relative;overflow:hidden}
+.stage-card h2{font-size:26px;margin-bottom:4px}
+.stage-card p{opacity:.8;font-size:14px;margin-bottom:14px}
+.slots{display:flex;flex-direction:column;gap:12px}
+.slot{perspective:900px;height:150px;cursor:pointer}
+.slot .in{position:relative;width:100%;height:100%;transition:transform .9s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.slot.open .in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:18px;display:flex;align-items:center;justify-content:center;gap:12px;padding:10px}
+.front{background:repeating-linear-gradient(45deg,#3d2072,#3d2072 10px,#4a2a86 10px,#4a2a86 20px);border:2px dashed #ffffff66;font-size:26px;font-weight:700;flex-direction:column}
+.front .q{font-size:46px;animation:wob 1.6s infinite}
+.back{transform:rotateY(180deg);background:#fff;color:var(--ink);text-align:left;justify-content:flex-start}
+.back img{width:128px;height:128px;object-fit:cover;border-radius:14px;cursor:zoom-in;flex-shrink:0}
+.back .t b{font-size:20px;display:block}.back .t span{font-size:13px;color:#6a5a82}
+.back .rk{font-size:34px}
+.slot.r1 .back{background:linear-gradient(135deg,#fff7d1,#ffe07a);box-shadow:0 0 30px var(--gold)}
+.slot.r1{height:170px}
+.count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:90px;font-weight:700;background:#2a1450ee;z-index:5;border-radius:18px;animation:pop .5s}
+@keyframes pop{from{transform:scale(2);opacity:0}}
+.gold{background:var(--gold);color:#2a1450}
+
+/* admin */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.sub-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 6px 18px #0002}
+.sub-card img{width:100%;height:200px;object-fit:cover;cursor:zoom-in}
+.sub-card>div{padding:10px 12px;font-size:14px}
+.sub-card.w{outline:3px solid var(--gold)}
+.row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}.row button{flex:1;padding:8px;font-size:13px;min-width:44px}
+.del{background:var(--red)}
+.scorebox{display:flex;align-items:center;gap:8px;margin-top:8px}
+.scorebox input{padding:8px 10px;font-weight:700;font-size:18px;text-align:center;width:90px}
+.scorebox span{font-size:12px;color:#7a6a92}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.lb{display:flex;gap:12px;align-items:center;background:#faf6ff;border-radius:14px;padding:10px 12px;margin-top:10px}
+.lb.first{background:linear-gradient(135deg,#fff7d1,#ffe07a);box-shadow:0 0 18px #f5b80088}
+.lb .rn{font-size:26px;font-weight:700;min-width:34px;text-align:center}
+.lb .ph{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.lb .ph img{width:48px;height:48px;border-radius:8px;object-fit:cover;cursor:zoom-in}
+.lb .pt{margin-left:auto;font-size:22px;font-weight:700;color:var(--p);text-align:center}
+.lb .pt small{display:block;font-size:11px;color:#7a6a92}
+.wide{max-width:1100px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="floaters" id="fl"></div>
+<div id="flash"></div>
+<canvas id="fx"></canvas>
+<div id="app"></div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {getFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,getDocs,serverTimestamp}
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut}
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+/* ====== CONFIG ====== */
+const ADMIN_EMAIL="mdabrarhasan123@gmail.com";
+const firebaseConfig={
+  apiKey:"AIzaSyCL7izneNWYBK3TnZI-lLSaipbFLYIVXMM",
+  authDomain:"dcpc-weekly-contest.firebaseapp.com",
+  projectId:"dcpc-weekly-contest",
+  storageBucket:"dcpc-weekly-contest.firebasestorage.app",
+  messagingSenderId:"74352416630",
+  appId:"1:74352416630:web:1a8f88b0c2acfb2c550c57",
+  measurementId:"G-ZWYV5SMRP1"
+};
+const CLOUD_NAME="esaqbats", PRESET="dcpc weekly contest";
+const POINTS={1:5,2:3,3:1};   // Photographer of the Month er point: 1st=5, 2nd=3, 3rd=1
+/* ===================== */
+
+const firebaseApp=initializeApp(firebaseConfig);
+const db=getFirestore(firebaseApp), auth=getAuth(firebaseApp);
+const $=s=>document.querySelector(s), app=$("#app");
+const bn=n=>String(n).replace(/\d/g,d=>"০১২৩৪৫৬৭৮৯"[d]);
+const MON=["জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"];
+const DAY=["রবি","সোম","মঙ্গল","বুধ","বৃহঃ","শুক্র","শনি"];
+const GL={science:"বিজ্ঞান",business:"ব্যবসায় শিক্ষা",humanities:"মানবিক"};
+const SECS={science:["A","B","C","D","E","F","G"],business:["A","B"],humanities:["A","B"]};
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse=s=>{const[a,b,c]=s.split("-").map(Number);return new Date(a,b-1,c)};
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const fmt=s=>{const d=parse(s);return `${bn(d.getDate())} ${MON[d.getMonth()]}`};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const badge=x=>x.group?`<span class="bd ${esc(x.group)}">${GL[x.group]||""} ${esc(x.section||"")}</span>`:"";
+let tick=null;
+
+/* floating background */
+$("#fl").innerHTML=Array.from({length:14},()=>`<span style="left:${Math.random()*100}%;animation-duration:${14+Math.random()*16}s;animation-delay:-${Math.random()*20}s">${["📷","✨","🎞️","📸","🌸"][Math.floor(Math.random()*5)]}</span>`).join("");
+
+/* confetti */
+const cv=$("#fx"),cx=cv.getContext("2d");let parts=[],raf=0;
+function confetti(n=140,big=false){
+  cv.width=innerWidth;cv.height=innerHeight;
+  for(let i=0;i<n;i++)parts.push({x:innerWidth/2+(Math.random()-.5)*200,y:innerHeight*.6,vx:(Math.random()-.5)*(big?22:14),vy:-Math.random()*(big?24:16)-4,s:5+Math.random()*7,c:`hsl(${Math.random()*360},90%,60%)`,r:Math.random()*6,vr:(Math.random()-.5)*.4,l:140+Math.random()*60});
+  if(!raf)loop();
+}
+function loop(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts=parts.filter(p=>p.l>0);
+  for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=.45;p.vx*=.99;p.r+=p.vr;p.l--;
+    cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.fillStyle=p.c;cx.globalAlpha=Math.min(1,p.l/40);cx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6);cx.restore()}
+  raf=parts.length?requestAnimationFrame(loop):0;
+  if(!raf)cx.clearRect(0,0,cv.width,cv.height);
+}
+const flash=()=>{const f=$("#flash");f.classList.remove("go");void f.offsetWidth;f.classList.add("go")};
+
+/* Auto week: Saturday -> Friday. Submission close: Thursday. Saturday e auto reset (notun week). */
+function autoWeek(now=new Date()){
+  const t=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const start=addDays(t,-((t.getDay()+1)%7));
+  return {start:iso(start),end:iso(addDays(start,6)),close:iso(addDays(start,5)),theme:""};
+}
+async function getWeek(){
+  const auto=autoWeek(); let cfg=null;
+  try{const s=await getDoc(doc(db,"config","week"));if(s.exists())cfg=s.data()}catch(e){}
+  const today=iso(new Date());
+  if(cfg&&cfg.start&&cfg.end&&today<=cfg.end&&today>=cfg.start)return {...auto,...cfg};
+  return auto;
+}
+const daysLeft=w=>Math.round((parse(w.close)-parse(iso(new Date())))/864e5);
+
+/* ---------- compress + upload ---------- */
+function compress(file){return new Promise((res,rej)=>{
+  const img=new Image(),u=URL.createObjectURL(file);
+  img.onload=()=>{const m=2000,r=Math.min(1,m/Math.max(img.width,img.height));
+    const c=document.createElement("canvas");c.width=img.width*r;c.height=img.height*r;
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+    c.toBlob(b=>b?res(b):rej(),"image/jpeg",.88);URL.revokeObjectURL(u)};
+  img.onerror=rej;img.src=u})}
+async function upload(blob){
+  const f=new FormData();f.append("file",blob);f.append("upload_preset",PRESET);f.append("folder","dcpc");
+  const r=await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,{method:"POST",body:f});
+  const j=await r.json();if(!j.secure_url)throw new Error("upload failed");return j.secure_url}
+
+/* ---------- LANDING ---------- */
+async function landing(){
+  clearInterval(tick);
+  const w=await getWeek(),left=daysLeft(w),closeAt=addDays(parse(w.close),1),closed=Date.now()>=closeAt;
+  const remind=left>=1&&left<=3,today0=left===0;
+  let ann=null;
+  try{const s=await getDoc(doc(db,"config","announce"));
+    if(s.exists()&&s.data().weekId===w.start&&(s.data().winners||[]).length)ann=s.data()}catch(e){}
+
+  const todayIso=iso(new Date());
+  const tl=Array.from({length:7},(_,i)=>{const d=addDays(parse(w.start),i),s=iso(d);
+    const cls=s===todayIso?"now":s<todayIso?"past":"";
+    const mark=s===w.close?"mark":"";
+    const ic=s===w.close?"📤":s===w.end?"🏆":i===0?"🚀":"📷";
+    const info=s===w.close?"📤 ছবি জমার শেষ দিন! রাতে বিচার বসবে।":s===w.end?"🏆 আজ বিজয়ী ঘোষণা — সাইটে চোখ রাখো!":i===0?"🚀 নতুন সপ্তাহ শুরু! থিম দেখো আর ছবি তোলা শুরু করো।":s>w.close?"⏳ বিচারের অপেক্ষা...":"📷 ক্যামেরা রেডি রাখো, সেরা ক্লিকটা জমা দাও।";
+    return `<div class="fr ${cls} ${mark}" data-info="${info}"><i>${ic}</i><b>${DAY[d.getDay()]}</b><small>${bn(d.getDate())}</small></div>`}).join("");
+
+  app.innerHTML=`<div class="wrap">
+  <div class="logos"><img src="dcpc-logo.png" alt="DCPC" class="lg-l" onerror="this.style.visibility='hidden'"><img src="dc-logo.png" alt="Dhaka College" class="lg-r" onerror="this.style.visibility='hidden'"></div>
+  <h1>সাপ্তাহিক ফটোগ্রাফি</h1><span class="ribbon">কন্টেস্ট</span>
+  <div class="sub">২৮ ব্যাচের জন্য!</div>
+  <div class="range">এই সপ্তাহ: ${fmt(w.start)} – ${fmt(w.end)}</div>
+  ${w.theme?`<div class="theme">🎯 এই সপ্তাহের থিম<b>${esc(w.theme)}</b></div>`:""}
+  <div class="film"><div class="reel" id="reel">${tl}</div></div><div class="fi" id="fi"></div>
+  ${ann?`<div class="stage-card"><h2>🏆 বিজয়ী ঘোষণা!</h2><p>কার্ডে ট্যাপ করো বা নিচের বাটনে চাপ দাও</p>
+    <div class="slots" id="slots"></div>
+    <button class="full gold" id="rv">🥁 কে জিতল? রিভিল করো!</button></div>`:""}
+  ${!closed?`<div class="timer" id="tm"><div><b id="td">০</b><small>দিন</small></div><div><b id="th">০</b><small>ঘণ্টা</small></div><div><b id="tmn">০</b><small>মিনিট</small></div><div><b id="ts">০</b><small>সেকেন্ড</small></div></div>`:""}
+  ${remind?`<div class="poster ${left===1?"hot":""}"><div class="l">${left===1?"শেষ সুযোগ! ":""}ছবি জমা দিতে মাত্র বাকি...</div><div class="n">${bn(left)}<small>দিন</small></div></div>`:""}
+  ${today0?`<div class="poster hot"><div class="l">আজই জমা দেওয়ার শেষ দিন!</div></div>`:""}
+  <div class="card">
+  ${closed?`<div class="closed">📪 এই সপ্তাহের জমা শেষ। বিচার চলছে! শনিবার নতুন সপ্তাহ শুরু হবে।</div>`:`
+  <form id="f">
+    <label>নাম</label><input id="name" required maxlength="50" placeholder="তোমার পুরো নাম">
+    <label>রোল নম্বর</label><input id="roll" required maxlength="12" inputmode="numeric" placeholder="যেমন: 2801">
+    <label>বিভাগ</label>
+    <div class="chips" id="grp">
+      <button type="button" class="chip" data-g="science">🔬 বিজ্ঞান</button>
+      <button type="button" class="chip" data-g="business">📊 ব্যবসায় শিক্ষা</button>
+      <button type="button" class="chip" data-g="humanities">📚 মানবিক</button>
+    </div>
+    <div id="secWrap" class="hidden"><label>সেকশন</label><div class="chips" id="sec"></div></div>
+    <label>তোমার সেরা ছবি</label>
+    <div class="drop" id="drop"><span>📸 ছবি সিলেক্ট করতে ট্যাপ করো</span></div>
+    <input type="file" id="file" accept="image/*" class="hidden">
+    <label>ক্যাপশন (ঐচ্ছিক)</label><textarea id="cap" rows="2" maxlength="200"></textarea>
+    <button class="full" id="go">জমা দাও</button>
+    <div class="msg" id="msg"></div>
+  </form>`}
+  </div></div>`;
+
+  if(!closed){
+    const t=()=>{let s=Math.max(0,Math.floor((closeAt-Date.now())/1000));
+      $("#td").textContent=bn(Math.floor(s/86400));$("#th").textContent=bn(Math.floor(s%86400/3600));
+      $("#tmn").textContent=bn(Math.floor(s%3600/60));$("#ts").textContent=bn(s%60);
+      if(s===0){clearInterval(tick);landing()}};
+    t();tick=setInterval(t,1000);
+  }
+  const reel=$("#reel"),fi=$("#fi"),frs=[...reel.children];
+  const pick=(f,fl)=>{frs.forEach(x=>x.classList.remove("sel"));f.classList.add("sel");fi.textContent=f.dataset.info;if(fl)flash()};
+  const nowF=frs.find(f=>f.classList.contains("now"))||frs[0];
+  pick(nowF,false);
+  requestAnimationFrame(()=>{reel.scrollLeft=nowF.offsetLeft-reel.clientWidth/2+nowF.clientWidth/2});
+  frs.forEach(f=>f.onclick=()=>pick(f,true));
+  if(ann)reveal(ann.winners);
+  if(closed)return;
+
+  const file=$("#file"),drop=$("#drop");let blob=null,grp="",sec="";
+  const secBox=$("#sec"),secWrap=$("#secWrap");
+  document.querySelectorAll("#grp .chip").forEach(c=>c.onclick=()=>{
+    grp=c.dataset.g;sec="";
+    document.querySelectorAll("#grp .chip").forEach(x=>x.classList.toggle("on",x===c));
+    secWrap.classList.remove("hidden");secWrap.style.animation="none";void secWrap.offsetWidth;secWrap.style.animation="";
+    secBox.innerHTML=SECS[grp].map((s,i)=>`<button type="button" class="chip sc" data-s="${s}" style="animation-delay:${i*60}ms">${s}</button>`).join("");
+    secBox.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{sec=b.dataset.s;
+      secBox.querySelectorAll(".chip").forEach(x=>x.classList.toggle("on",x===b));confetti(18)});
+  });
+  drop.onclick=()=>file.click();
+  file.onchange=async()=>{const f=file.files[0];if(!f)return;
+    blob=await compress(f);drop.innerHTML=`<img src="${URL.createObjectURL(blob)}">`};
+  $("#f").onsubmit=async e=>{e.preventDefault();
+    const m=$("#msg"),b=$("#go");m.className="msg";
+    const bad=t=>{m.className="msg err";m.textContent=t};
+    const roll=$("#roll").value.trim().replace(/\D/g,"");
+    if(!roll)return bad("সঠিক রোল দাও");
+    if(!grp)return bad("তোমার বিভাগ সিলেক্ট করো");
+    if(!sec)return bad("তোমার সেকশন সিলেক্ট করো");
+    if(!blob)return bad("আগে একটি ছবি সিলেক্ট করো");
+    b.disabled=true;b.textContent="আপলোড হচ্ছে...";
+    try{
+      const url=await upload(blob);
+      await setDoc(doc(db,"submissions",`${w.start}_${roll}`),{weekId:w.start,name:$("#name").value.trim(),roll,group:grp,section:sec,caption:$("#cap").value.trim(),url,winner:false,createdAt:serverTimestamp()});
+      flash();confetti(110);
+      $("#f").reset();blob=null;grp="";sec="";
+      document.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));secWrap.classList.add("hidden");
+      drop.innerHTML="<span>📸 ছবি সিলেক্ট করতে ট্যাপ করো</span>";
+      m.className="msg ok";m.textContent="✅ ক্লিক! ছবি জমা হয়েছে। শুভকামনা!";
+    }catch(err){m.className="msg err";
+      m.textContent=String(err.code||err).includes("permission")?"এই রোল দিয়ে এই সপ্তাহে ইতিমধ্যে ছবি জমা দেওয়া হয়েছে, অথবা জমা দেওয়ার সময় শেষ।":"কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করো।"}
+    b.disabled=false;b.textContent="জমা দাও"};
+}
+
+/* interactive winner reveal: 3rd -> 2nd -> 1st */
+function reveal(winners){
+  const order=[...winners].sort((a,b)=>b.rank-a.rank), medal={1:"🥇",2:"🥈",3:"🥉"}, label={1:"১ম স্থান",2:"২য় স্থান",3:"৩য় স্থান"};
+  const box=$("#slots"),btn=$("#rv");let i=0,busy=false;
+  box.innerHTML=order.map((x,k)=>`<div class="slot r${x.rank}" data-k="${k}"><div class="in">
+    <div class="face front"><div class="q">❓</div>${label[x.rank]||""}</div>
+    <div class="face back"><img src="${esc(x.url)}" onclick="event.stopPropagation();window.open(this.src)"><div class="t"><span class="rk">${medal[x.rank]||""}</span><b>${esc(x.name)}</b><span>রোল ${esc(x.roll)} ${x.group?"• "+(GL[x.group]||"")+" "+esc(x.section||""):""}</span>${x.caption?`<br><span>${esc(x.caption)}</span>`:""}</div></div></div></div>`).join("");
+  const next=()=>{
+    if(busy||i>=order.length)return;busy=true;
+    const slot=box.children[i],x=order[i];
+    const c=document.createElement("div");c.className="count";slot.style.position="relative";slot.appendChild(c);
+    let n=3;c.textContent=bn(n);
+    const iv=setInterval(()=>{n--;if(n>0){c.textContent=bn(n);c.style.animation="none";void c.offsetWidth;c.style.animation=""}
+      else{clearInterval(iv);c.remove();flash();slot.classList.add("open");
+        confetti(x.rank===1?320:120,x.rank===1);
+        i++;busy=false;
+        btn.textContent=i>=order.length?"🎉 অভিনন্দন সবাইকে!":(order[i].rank===1?"👑 এবার চ্যাম্পিয়ন!":"পরের জন কে?");
+        if(i>=order.length)btn.disabled=true}},800);
+  };
+  btn.onclick=next;
+  box.onclick=e=>{const s=e.target.closest(".slot");if(s&&+s.dataset.k===i)next()};
+}
+
+/* ---------- ADMIN ---------- */
+function login(msg=""){
+  app.innerHTML=`<div class="wrap"><div class="card"><h2 style="color:var(--p)">Admin Login</h2>
+  <label>Email</label><input id="em" type="email"><label>Password</label><input id="pw" type="password">
+  <button class="full" id="li">Login</button><div class="msg ${msg?"err":""}">${msg}</div></div></div>`;
+  $("#li").onclick=async()=>{
+    try{
+      const credential=await signInWithEmailAndPassword(auth,$("#em").value.trim(),$("#pw").value);
+      if(credential.user.email!==ADMIN_EMAIL){
+        await signOut(auth);
+        login("এই ইমেইলটি Admin account নয়।");
+      }
+    }catch(e){login("Login failed. Email অথবা password পরীক্ষা করো।")}
+  };
+}
+async function admin(){
+  clearInterval(tick);
+  const w=await getWeek();let view=w.start,list=[];
+  const curMonth=iso(new Date()).slice(0,7);
+  app.innerHTML=`<div class="wrap wide">
+  <div class="top"><b>DCPC Admin</b><span><button id="seeSite" style="margin-right:6px">সাইট দেখো</button><button id="out">Logout</button></span></div>
+
+  <div class="card"><b>চলমান সপ্তাহ সেট করো</b>
+  <div class="three"><div><label>শুরু</label><input type="date" id="s" value="${w.start}"></div>
+  <div><label>শেষ</label><input type="date" id="e" value="${w.end}"></div>
+  <div><label>জমার শেষ দিন</label><input type="date" id="c" value="${w.close}"></div></div>
+  <label>এই সপ্তাহের থিম (ঐচ্ছিক)</label><input id="th" maxlength="60" value="${esc(w.theme||"")}" placeholder="যেমন: বৃষ্টির দিন">
+  <button class="full" id="sv">Save</button><div class="msg" id="m"></div></div>
+
+  <div class="card"><b>⚖️ বিচার</b>
+  <label>কোন সপ্তাহ (সপ্তাহের শুরুর তারিখ)</label>
+  <input type="date" id="vw" value="${view}">
+  <div class="row">
+    <button id="auto">⚡ স্কোর অনুযায়ী Top 3 বাছাই</button>
+    <button id="an" class="gold">📣 ঘোষণা (সাইটে লাইভ)</button>
+    <button id="hd" class="del">ঘোষণা সরাও</button>
+  </div>
+  <div class="row"><button id="fin" style="background:#1f9d55">✅ Finalize: Top 3 রাখো, বাকি মুছে ফেলো + পয়েন্ট যোগ</button></div>
+  <div class="msg" id="am"></div></div>
+  <div id="list"></div>
+
+  <div class="card" style="margin-top:20px"><b>👑 Photographer of the Month</b>
+  <label>মাস</label><input type="month" id="mo" value="${curMonth}">
+  <div id="board"></div></div>
+  </div>`;
+  $("#out").onclick=()=>signOut(auth);
+  $("#seeSite").onclick=()=>{location.hash="";};
+  const note=(t,ok=true)=>{const m=$("#am");m.className="msg "+(ok?"ok":"err");m.textContent=t};
+
+  $("#sv").onclick=async()=>{
+    const S=$("#s").value,E=$("#e").value,C=$("#c").value;
+    await setDoc(doc(db,"config","week"),{start:S,end:E,close:C,theme:$("#th").value.trim(),
+      startAt:parse(S),endAt:addDays(parse(E),1),closeAt:addDays(parse(C),1)});  // *At fields Firestore rules e deadline check er jonno
+    const m=$("#m");m.className="msg ok";m.textContent="Saved ✅"};
+  $("#vw").onchange=e=>{view=e.target.value;render()};
+
+  $("#auto").onclick=async()=>{
+    const sc=[...list].filter(x=>(x.score||0)>0).sort((a,b)=>b.score-a.score);
+    if(!sc.length)return note("আগে ছবিগুলোতে স্কোর দাও",false);
+    const top=sc.slice(0,3).map(x=>x.id);
+    for(const x of list){const r=top.indexOf(x.id)+1;if((x.rank||0)!==r)await updateDoc(doc(db,"submissions",x.id),{rank:r,winner:r>0})}
+    await render();note("Top 3 বাছাই হয়েছে ✅ (দরকার হলে হাতে বদলাও)")};
+
+  $("#an").onclick=async()=>{
+    const ws=list.filter(x=>x.rank>0).map(x=>({rank:x.rank,name:x.name,roll:x.roll,group:x.group||"",section:x.section||"",url:x.url,caption:x.caption||""}));
+    if(!ws.length)return note("আগে কমপক্ষে একজনকে 🥇/🥈/🥉 দাও",false);
+    await setDoc(doc(db,"config","announce"),{weekId:view,winners:ws});
+    note("ঘোষণা লাইভ ✅ (শুধু এই সপ্তাহ চলাকালীন দেখাবে, পরের সপ্তাহে নিজে থেকেই মুছে যাবে)")};
+  $("#hd").onclick=async()=>{await deleteDoc(doc(db,"config","announce"));note("ঘোষণা সরানো হয়েছে")};
+
+  $("#fin").onclick=async()=>{
+    const top=list.filter(x=>x.rank>0);
+    if(!top.length)return note("আগে Top 3 বাছাই করো",false);
+    if(!confirm(`${top.length} জন রাখা হবে, বাকি ${list.length-top.length}টি ছবি মুছে যাবে। নিশ্চিত?`))return;
+    for(const x of top)await setDoc(doc(db,"winners",`${view}_${x.rank}`),{weekId:view,month:view.slice(0,7),rank:x.rank,points:POINTS[x.rank]||0,
+      name:x.name,roll:x.roll,group:x.group||"",section:x.section||"",url:x.url,caption:x.caption||"",score:x.score||0});
+    for(const x of list)if(!(x.rank>0))await deleteDoc(doc(db,"submissions",x.id));
+    await render();await board();note("Finalize হয়েছে ✅ পয়েন্ট যোগ হয়েছে, বাকি ছবি মুছে গেছে")};
+
+  async function render(){
+    const s=await getDocs(query(collection(db,"submissions"),where("weekId","==",view)));
+    list=s.docs.map(d=>({id:d.id,rank:0,...d.data()})).sort((a,b)=>(b.score??-1)-(a.score??-1));
+    const medal=["","🥇","🥈","🥉"];
+    $("#list").innerHTML=`<div style="margin:6px 0 12px;font-weight:700">মোট সাবমিশন: ${bn(list.length)}</div><div class="grid">`+list.map(x=>`
+    <div class="sub-card ${x.rank?"w":""}"><img src="${esc(x.url)}" onclick="window.open(this.src)">
+    <div><b>${esc(x.name)}</b> • রোল ${esc(x.roll)} ${medal[x.rank]||""}<br>${badge(x)}<br><small>${esc(x.caption||"")}</small>
+    <div class="scorebox"><input type="number" min="0" max="100" step="0.5" value="${x.score??""}" placeholder="—" data-sc="${x.id}"><span>/ ১০০ নম্বর</span></div>
+    <div class="row">${[1,2,3].map(r=>`<button class="${x.rank===r?"gold":""}" data-r="${r}" data-id="${x.id}">${medal[r]}</button>`).join("")}
+    <button data-r="0" data-id="${x.id}">✕</button><button class="del" data-d="${x.id}">🗑</button></div></div></div>`).join("")+"</div>";
+    document.querySelectorAll("[data-sc]").forEach(i=>i.onchange=async()=>{
+      const v=i.value===""?null:Math.max(0,Math.min(100,+i.value));
+      await updateDoc(doc(db,"submissions",i.dataset.sc),{score:v});const o=list.find(x=>x.id===i.dataset.sc);if(o)o.score=v});
+    document.querySelectorAll("[data-r]").forEach(b=>b.onclick=async()=>{
+      const r=+b.dataset.r;
+      if(r>0)for(const o of list)if(o.rank===r&&o.id!==b.dataset.id)await updateDoc(doc(db,"submissions",o.id),{rank:0,winner:false});
+      await updateDoc(doc(db,"submissions",b.dataset.id),{rank:r,winner:r>0});render()});
+    document.querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{if(confirm("Delete?")){await deleteDoc(doc(db,"submissions",b.dataset.d));render()}});
+  }
+
+  async function board(){
+    const mo=$("#mo").value;
+    const s=await getDocs(query(collection(db,"winners"),where("month","==",mo)));
+    const by={};
+    s.docs.forEach(d=>{const x=d.data();const p=by[x.roll]||(by[x.roll]={roll:x.roll,name:x.name,group:x.group,section:x.section,pts:0,m:{1:0,2:0,3:0},ph:[]});
+      p.pts+=x.points||0;p.m[x.rank]=(p.m[x.rank]||0)+1;p.ph.push(x)});
+    const a=Object.values(by).sort((x,y)=>y.pts-x.pts||y.m[1]-x.m[1]||y.m[2]-x.m[2]);
+    $("#board").innerHTML=a.length?a.map((p,i)=>`<div class="lb ${i===0?"first":""}">
+      <div class="rn">${i===0?"👑":bn(i+1)}</div>
+      <div><b>${esc(p.name)}</b> • রোল ${esc(p.roll)} ${badge(p)}<br><small>🥇${bn(p.m[1])} 🥈${bn(p.m[2])} 🥉${bn(p.m[3])}</small>
+      <div class="ph">${p.ph.sort((x,y)=>x.weekId.localeCompare(y.weekId)).map(x=>`<img src="${esc(x.url)}" title="${fmt(x.weekId)} • ${x.rank} স্থান" onclick="window.open(this.src)">`).join("")}</div></div>
+      <div class="pt">${bn(p.pts)}<small>পয়েন্ট</small></div></div>`).join(""):`<div style="margin-top:10px;color:#7a6a92">এই মাসে এখনো কোনো ফলাফল Finalize হয়নি।</div>`;
+  }
+  $("#mo").onchange=board;
+  render();board();
+}
+
+/* ---------- ROUTER ---------- */
+let user=null,ready=false;
+onAuthStateChanged(auth,u=>{
+  if(u && u.email!==ADMIN_EMAIL){
+    user=null;
+    signOut(auth);
+  }else{
+    user=u;
+  }
+  ready=true;
+  route();
+});
+function route(){
+  if(location.hash==="#/admin"){ if(!ready)return; user?admin():login(); }
+  else landing();
+}
+addEventListener("hashchange",route);
+if(location.hash!=="#/admin")landing();
+</script>
+</body>
+</html>
