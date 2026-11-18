@@ -427,7 +427,7 @@ async function landing(){
     const cls=s===todayIso?"now":s<todayIso?"past":"";
     const mark=s===w.close?"mark":"";
     const ic=s===w.close?"📤":s===w.end?"🏆":i===0?"🚀":"📷";
-    const info=s===w.close?"📤 ছবি জমার শেষ দিন! রাতে বিচার বসবে।":s===w.end?"🏆 আজ বিজয়ী ঘোষণা — সাইটে চোখ রাখো!":i===0?"🚀 নতুন সপ্তাহ শুরু! থিম দেখো আর ছবি তোলা শুরু করো।":s>w.close?"⏳ বিচারের অপেক্ষা...":"📷 ক্যামেরা রেডি রাখো, সেরা ক্লিকটা জমা দাও।";
+    const info=s===w.close?"ছবি জমার শেষ দিন!অংশগ্রহণ করেছো তো?":s===w.end?"আজ বিজয়ী ঘোষণা — সাইটে চোখ রেখো কিন্তু!":i===0?" আজকে contest এর প্রথম দিন! থিম অনুযায়ী ছবি তুলতে প্রস্তুত তো?":s>w.close?"ফলাফলের অপেক্ষা...":"ছবি জমা দাও এখনই";
     return `<div class="fr ${cls} ${mark}" data-info="${info}"><i>${ic}</i><b>${DAY[d.getDay()]}</b><small>${bn(d.getDate())}</small></div>`}).join("");
 
   app.innerHTML=`<div class="wrap">
@@ -438,9 +438,9 @@ async function landing(){
   <div class="range">এই সপ্তাহ: ${fmt(w.start)} – ${fmt(w.end)}</div>
   ${w.theme?`<div class="theme">🎯 এই সপ্তাহের থিম<b>${esc(w.theme)}</b></div>`:""}
   <div class="film"><div class="reel" id="reel">${tl}</div></div><div class="fi" id="fi"></div>
-  ${ann?`<div class="stage-card"><h2>🏆 বিজয়ী ঘোষণা!</h2><p>কার্ডে ট্যাপ করো বা নিচের বাটনে চাপ দাও</p>
+  ${ann?`<div class="stage-card"><h2> এবারের বিজয়ী ঘোষণা!</h2><p>কার্ডে ট্যাপ করো বা নিচের বাটনে চাপ দাও</p>
     <div class="slots" id="slots"></div>
-    <button class="full gold" id="rv">🥁 কে জিতল? রিভিল করো!</button></div>`:""}
+    <button class="full gold" id="rv">🥁 কে জিতল? চলো একসাথে রিভিল করি!</button></div>`:""}
   ${!closed?`<div class="timer" id="tm"><div><b id="td">০</b><small>দিন</small></div><div><b id="th">০</b><small>ঘণ্টা</small></div><div><b id="tmn">০</b><small>মিনিট</small></div><div><b id="ts">০</b><small>সেকেন্ড</small></div></div>`:""}
   ${(remind||today0)?`<div class="vf tilt ${left<=1?"hot":""}">
     <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
@@ -449,15 +449,15 @@ async function landing(){
     <div class="vf-bar">${[3,2,1,0].map(n=>`<em class="${n===left?"on":""}"><u></u>${n===0?"আজ":bn(n)}</em>`).join("")}</div>
     <div class="vf-cap">ছবি জমা দিতে মাত্র বাকি...</div></div>`:""}
   <div class="card">
-  ${closed?`<div class="closed">📪 এই সপ্তাহের জমা শেষ। বিচার চলছে! শনিবার নতুন সপ্তাহ শুরু হবে।</div>`:`
+  ${closed?`<div class="closed">📪 এই সপ্তাহের সুবমিশন শেষ। ফলাফল জানবে শীঘ্রই ক্লাব পেজে! শনিবার নতুন সপ্তাহ শুরু হবে।</div>`:`
   <form id="f">
     <label>নাম</label><input id="name" required maxlength="50" placeholder="তোমার পুরো নাম">
-    <label>রোল নম্বর</label><input id="roll" required maxlength="12" inputmode="numeric" placeholder="যেমন: 2801">
+    <label>রোল নম্বর</label><input id="roll" required maxlength="12" inputmode="numeric" placeholder="যেমন : ০০৪">
     <label>বিভাগ</label>
     <div class="chips" id="grp">
-      <button type="button" class="chip" data-g="science">🔬 বিজ্ঞান</button>
-      <button type="button" class="chip" data-g="business">📊 ব্যবসায় শিক্ষা</button>
-      <button type="button" class="chip" data-g="humanities">📚 মানবিক</button>
+      <button type="button" class="chip" data-g="science"> বিজ্ঞান</button>
+      <button type="button" class="chip" data-g="business"> ব্যবসায় শিক্ষা</button>
+      <button type="button" class="chip" data-g="humanities"> মানবিক</button>
     </div>
     <div id="secWrap" class="hidden"><label>সেকশন</label><div class="chips" id="sec"></div></div>
     <div class="hint" id="rh"></div>
@@ -469,7 +469,7 @@ async function landing(){
     <div class="msg" id="msg"></div>
   </form>`}
   </div>
-  <div class="social"><span>আমাদের সাথে থাকো</span>
+  <div class="social"><span>আমাদের সাথে যুক্ত হতে পারো এখানে</span>
     <div class="sl">
       <a class="fb" href="https://www.facebook.com/dcpc.official" target="_blank" rel="noopener" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8.2h2.8l.5-3.3h-3.3V8.4c0-.9.4-1.7 1.8-1.7h1.6V3.8s-1.4-.3-2.8-.3c-2.9 0-4.6 1.7-4.6 4.8v2.2H6.7v3.3h2.8V22h4z"/></svg>Facebook</a>
       <a class="ig" href="https://www.instagram.com/dcpc.club" target="_blank" rel="noopener" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Instagram</a>
@@ -525,8 +525,8 @@ async function landing(){
       flash();confetti(110);
       $("#f").reset();blob=null;grp="";sec="";
       document.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));secWrap.classList.add("hidden");$("#rh").classList.remove("show");
-      drop.innerHTML="<span>📸 ছবি সিলেক্ট করতে ট্যাপ করো</span>";
-      m.className="msg ok";m.textContent="✅ ক্লিক! ছবি জমা হয়েছে। শুভকামনা!";
+      drop.innerHTML="<span>ছবি সিলেক্ট করতে ট্যাপ করো</span>";
+      m.className="msg ok";m.textContent="ছবি জমা হয়েছে। শুভকামনা তোমার জন্য...";
     }catch(err){m.className="msg err";
       m.textContent=String(err.code||err).includes("permission")?"এই রোল দিয়ে এই সপ্তাহে ইতিমধ্যে ছবি জমা দেওয়া হয়েছে, অথবা জমা দেওয়ার সময় শেষ।":"কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করো।"}
     b.disabled=false;b.textContent="জমা দাও"};
@@ -548,7 +548,7 @@ function reveal(winners){
       else{clearInterval(iv);c.remove();flash();slot.classList.add("open");
         confetti(x.rank===1?320:120,x.rank===1);
         i++;busy=false;
-        btn.textContent=i>=order.length?"🎉 অভিনন্দন সবাইকে!":(order[i].rank===1?"👑 এবার চ্যাম্পিয়ন!":"পরের জন কে?");
+        btn.textContent=i>=order.length?" অভিনন্দন সবাইকে!":(order[i].rank===1?"👑 এবার চ্যাম্পিয়ন!":"পরের জন কে?");
         if(i>=order.length)btn.disabled=true}},800);
   };
   btn.onclick=next;
