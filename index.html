@@ -436,11 +436,11 @@ async function landing(){
   <h1>সাপ্তাহিক ফটোগ্রাফি</h1><span class="ribbon">কন্টেস্ট</span>
   <div class="sub">২৮ ব্যাচের জন্য!</div></div>
   <div class="range">এই সপ্তাহ: ${fmt(w.start)} – ${fmt(w.end)}</div>
-  ${w.theme?`<div class="theme">🎯 এই সপ্তাহের থিম<b>${esc(w.theme)}</b></div>`:""}
+  ${w.theme?`<div class="theme"> এই সপ্তাহের থিম<b>${esc(w.theme)}</b></div>`:""}
   <div class="film"><div class="reel" id="reel">${tl}</div></div><div class="fi" id="fi"></div>
   ${ann?`<div class="stage-card"><h2> এবারের বিজয়ী ঘোষণা!</h2><p>কার্ডে ট্যাপ করো বা নিচের বাটনে চাপ দাও</p>
     <div class="slots" id="slots"></div>
-    <button class="full gold" id="rv">🥁 কে জিতল? চলো একসাথে রিভিল করি!</button></div>`:""}
+    <button class="full gold" id="rv">কে জিতল? চলো একসাথে রিভিল করি!</button></div>`:""}
   ${!closed?`<div class="timer" id="tm"><div><b id="td">০</b><small>দিন</small></div><div><b id="th">০</b><small>ঘণ্টা</small></div><div><b id="tmn">০</b><small>মিনিট</small></div><div><b id="ts">০</b><small>সেকেন্ড</small></div></div>`:""}
   ${(remind||today0)?`<div class="vf tilt ${left<=1?"hot":""}">
     <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
@@ -449,7 +449,7 @@ async function landing(){
     <div class="vf-bar">${[3,2,1,0].map(n=>`<em class="${n===left?"on":""}"><u></u>${n===0?"আজ":bn(n)}</em>`).join("")}</div>
     <div class="vf-cap">ছবি জমা দিতে মাত্র বাকি...</div></div>`:""}
   <div class="card">
-  ${closed?`<div class="closed">📪 এই সপ্তাহের সুবমিশন শেষ। ফলাফল জানবে শীঘ্রই ক্লাব পেজে! শনিবার নতুন সপ্তাহ শুরু হবে।</div>`:`
+  ${closed?`<div class="closed"> এই সপ্তাহের সুবমিশন শেষ। ফলাফল জানবে শীঘ্রই ক্লাব পেজে! শনিবার নতুন সপ্তাহ শুরু হবে।</div>`:`
   <form id="f">
     <label>নাম</label><input id="name" required maxlength="50" placeholder="তোমার পুরো নাম">
     <label>রোল নম্বর</label><input id="roll" required maxlength="12" inputmode="numeric" placeholder="যেমন : ০০৪">
@@ -584,12 +584,12 @@ async function admin(){
   <label>এই সপ্তাহের থিম (ঐচ্ছিক)</label><input id="th" maxlength="60" value="${esc(w.theme||"")}" placeholder="যেমন: বৃষ্টির দিন">
   <button class="full" id="sv">Save</button><div class="msg" id="m"></div></div>
 
-  <div class="card"><b>⚖️ বিচার</b>
+  <div class="card"><b>জাজমেন্ট</b>
   <label>কোন সপ্তাহ (সপ্তাহের শুরুর তারিখ)</label>
   <input type="date" id="vw" value="${view}">
   <div class="row">
-    <button id="auto">⚡ স্কোর অনুযায়ী Top 3 বাছাই</button>
-    <button id="an" class="gold">📣 ঘোষণা (সাইটে লাইভ)</button>
+    <button id="auto" স্কোর অনুযায়ী Top 3 বাছাই</button>
+    <button id="an" class="gold"> ঘোষণা (সাইটে লাইভ)</button>
     <button id="hd" class="del">ঘোষণা সরাও</button>
   </div>
   <div class="row"><button id="fin" style="background:#1f9d55">✅ Finalize: Top 3 রাখো, বাকি মুছে ফেলো + পয়েন্ট যোগ</button></div>
