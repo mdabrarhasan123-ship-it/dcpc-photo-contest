@@ -269,7 +269,7 @@ h1{font-size:clamp(36px,11vw,58px);line-height:1.15}
   background-size:24px 3px,3px 24px,24px 3px,3px 24px,24px 3px,3px 24px,24px 3px,3px 24px;
   animation:aflock 2s ease-in-out infinite}
 @keyframes aflock{0%{transform:scale(1.4);opacity:0}40%,100%{transform:scale(1);opacity:1}}
-
+.tmcap{text-align:center;font-weight:700;color:var(--p);margin-bottom:8px;font-size:14px;letter-spacing:.5px}
 </style>
 </head>
 <body>
@@ -417,7 +417,9 @@ async function upload(blob){
 async function landing(){
   clearInterval(tick);
   const w=await getWeek(),left=daysLeft(w),closeAt=addDays(parse(w.close),1),closed=Date.now()>=closeAt;
-  const remind=left>=1&&left<=3,today0=left===0;
+    const startAt=parse(w.start),notStarted=Date.now()<startAt,target=notStarted?startAt:closeAt;
+  const toStart=Math.round((parse(w.start)-parse(iso(new Date())))/864e5);
+  const remind=!notStarted&&left>=1&&left<=3,today0=!notStarted&&left===0;
   let ann=null;
   try{const s=await getDoc(doc(db,"config","announce"));
     if(s.exists()&&s.data().weekId===w.start&&(s.data().winners||[]).length)ann=s.data()}catch(e){}
@@ -441,15 +443,15 @@ async function landing(){
   ${ann?`<div class="stage-card"><h2> এবারের বিজয়ী ঘোষণা!</h2><p>কার্ডে ট্যাপ করো বা নিচের বাটনে চাপ দাও</p>
     <div class="slots" id="slots"></div>
     <button class="full gold" id="rv">কে জিতল? চলো একসাথে রিভিল করি!</button></div>`:""}
-  ${!closed?`<div class="timer" id="tm"><div><b id="td">০</b><small>দিন</small></div><div><b id="th">০</b><small>ঘণ্টা</small></div><div><b id="tmn">০</b><small>মিনিট</small></div><div><b id="ts">০</b><small>সেকেন্ড</small></div></div>`:""}
-  ${(remind||today0)?`<div class="vf tilt ${left<=1?"hot":""}">
+  ${!closed?`<div class="tmcap">${notStarted?" কন্টেস্ট শুরু হতে বাকি":" ছবি জমা শেষ হতে বাকি"}</div><div class="timer" id="tm"><div><b id="td">০</b><small>দিন</small></div><div><b id="th">০</b><small>ঘণ্টা</small></div><div><b id="tmn">০</b><small>মিনিট</small></div><div><b id="ts">০</b><small>সেকেন্ড</small></div></div>`:""}
+  ${(remind||today0||notStarted)?`<div class="vf tilt ${!notStarted&&left<=1?"hot":""}">
     <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
-    <div class="vf-top"><span class="rec">● REC</span><span>${left===0?"আজই শেষ":left===1?"শেষ সুযোগ":"কাউন্টডাউন"}</span></div>
-    <div class="vf-mid">${left===0?`<div class="vf-today">আজই<br>শেষ দিন!</div>`:`<div class="vf-num"><b>${bn(left)}</b><span>দিন বাকি</span></div>`}</div>
-    <div class="vf-bar">${[3,2,1,0].map(n=>`<em class="${n===left?"on":""}"><u></u>${n===0?"আজ":bn(n)}</em>`).join("")}</div>
-    <div class="vf-cap">ছবি জমা দিতে মাত্র বাকি...</div></div>`:""}
+    <div class="vf-top"><span class="rec">● REC</span><span>${notStarted?"শীঘ্রই শুরু":left===0?"আজই শেষ":left===1?"শেষ সুযোগ":"কাউন্টডাউন"}</span></div>
+    <div class="vf-mid">${!notStarted&&left===0?`<div class="vf-today">আজই<br>শেষ দিন!</div>`:`<div class="vf-num"><b>${bn(notStarted?toStart:left)}</b><span>দিন বাকি</span></div>`}</div>
+    ${notStarted?"":`<div class="vf-bar">${[3,2,1,0].map(n=>`<em class="${n===left?"on":""}"><u></u>${n===0?"আজ":bn(n)}</em>`).join("")}</div>`}
+    <div class="vf-cap">${notStarted?"কন্টেস্ট শুরু হতে মাত্র বাকি...":"ছবি জমা দিতে মাত্র বাকি..."}</div></div>`:""}
   <div class="card">
-  ${closed?`<div class="closed"> এই সপ্তাহের সুবমিশন শেষ। ফলাফল জানবে শীঘ্রই ক্লাব পেজে! শনিবার নতুন সপ্তাহ শুরু হবে।</div>`:`
+  ${notStarted?`<div class="closed"> কন্টেস্ট এখনো শুরু হয়নি। ${fmt(w.start)} থেকে ছবি জমা দেওয়া যাবে।</div>`:closed?`<div class="closed"> এই সপ্তাহের সাবমিশন পর্ব শেষ। জাজমেন্ট চলছে! শনিবার নতুন Contest শুরু হবে।</div>`:`
   <form id="f">
     <label>নাম</label><input id="name" required maxlength="50" placeholder="তোমার পুরো নাম">
     <label>রোল নম্বর</label><input id="roll" required maxlength="12" inputmode="numeric" placeholder="যেমন : ০০৪">
@@ -478,7 +480,7 @@ async function landing(){
 
   reveals();
   if(!closed){
-    const t=()=>{let s=Math.max(0,Math.floor((closeAt-Date.now())/1000));
+        const t=()=>{let s=Math.max(0,Math.floor((target-Date.now())/1000));
       $("#td").textContent=bn(Math.floor(s/86400));$("#th").textContent=bn(Math.floor(s%86400/3600));
       $("#tmn").textContent=bn(Math.floor(s%3600/60));$("#ts").textContent=bn(s%60);
       if(s===0){clearInterval(tick);landing()}};
@@ -491,7 +493,7 @@ async function landing(){
   requestAnimationFrame(()=>{reel.scrollLeft=nowF.offsetLeft-reel.clientWidth/2+nowF.clientWidth/2});
   frs.forEach(f=>f.onclick=()=>pick(f,true));
   if(ann)reveal(ann.winners);
-  if(closed)return;
+  if(closed||notStarted)return;
 
   const file=$("#file"),drop=$("#drop");let blob=null,grp="",sec="";
   const secBox=$("#sec"),secWrap=$("#secWrap");
