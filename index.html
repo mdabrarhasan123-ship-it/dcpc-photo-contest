@@ -287,7 +287,7 @@ h1{font-size:clamp(36px,11vw,58px);line-height:1.15}
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {getFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,getDocs,serverTimestamp}
+import {getFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,collection,query,where,getDocs,serverTimestamp,onSnapshot}
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut}
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -395,7 +395,7 @@ async function getWeek(){
   const auto=autoWeek(); let cfg=null;
   try{const s=await getDoc(doc(db,"config","week"));if(s.exists())cfg=s.data()}catch(e){}
   const today=iso(new Date());
-  if(cfg&&cfg.start&&cfg.end&&today<=cfg.end&&today>=cfg.start)return {...auto,...cfg};
+  if(cfg&&cfg.start&&cfg.end&&today<=cfg.end)return {...auto,...cfg};  // admin er week shesh na howa porjonto; tarpor auto reset
   return auto;
 }
 const daysLeft=w=>Math.round((parse(w.close)-parse(iso(new Date())))/864e5);
@@ -603,12 +603,20 @@ async function admin(){
   $("#out").onclick=()=>signOut(auth);
   $("#seeSite").onclick=()=>{location.hash="";};
   const note=(t,ok=true)=>{const m=$("#am");m.className="msg "+(ok?"ok":"err");m.textContent=t};
-
+  // shuru er tarikh bodlale shesh (+6) ar jomar shesh (+5) nijei boshe jabe
+  $("#s").onchange=()=>{const S=$("#s").value;if(!S)return;
+    $("#e").value=iso(addDays(parse(S),6));$("#c").value=iso(addDays(parse(S),5))};
   $("#sv").onclick=async()=>{
-    const S=$("#s").value,E=$("#e").value,C=$("#c").value;
-    await setDoc(doc(db,"config","week"),{start:S,end:E,close:C,theme:$("#th").value.trim(),
-      startAt:parse(S),endAt:addDays(parse(E),1),closeAt:addDays(parse(C),1)});  // *At fields Firestore rules e deadline check er jonno
-    const m=$("#m");m.className="msg ok";m.textContent="Saved ✅"};
+    const m=$("#m"),S=$("#s").value,E=$("#e").value,C=$("#c").value;
+    if(!S||!E||!C){m.className="msg err";m.textContent="তিনটি তারিখই দাও";return}
+    if(!(S<=C&&C<=E)){m.className="msg err";m.textContent="ক্রম হতে হবে: শুরু ≤ জমার শেষ দিন ≤ শেষ";return}
+    try{
+      await setDoc(doc(db,"config","week"),{start:S,end:E,close:C,theme:$("#th").value.trim(),
+        startAt:parse(S),endAt:addDays(parse(E),1),closeAt:addDays(parse(C),1)});  // *At fields Firestore rules e deadline check er jonno
+      m.className="msg ok";m.textContent="Saved ✅ সাইটে লাইভ হয়ে গেছে";
+    }catch(err){
+      m.className="msg err";m.textContent="Save হয়নি: "+(err.code||err.message)+" (Rules publish করা আছে কি? Admin login আছে কি?)";
+    }};
   $("#vw").onchange=e=>{view=e.target.value;render()};
 
   $("#auto").onclick=async()=>{
@@ -688,6 +696,9 @@ function route(){
   else landing();
 }
 addEventListener("hashchange",route);
+// admin week/ঘোষণা বদলালে খোলা সাইট নিজে থেকেই আপডেট হবে
+["week","announce"].forEach(n=>{let first=true;
+  onSnapshot(doc(db,"config",n),()=>{if(first){first=false;return}if(location.hash!=="#/admin")landing()},()=>{})});
 if(location.hash!=="#/admin")landing();
 </script>
 </body>
