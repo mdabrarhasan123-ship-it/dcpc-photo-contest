@@ -623,7 +623,7 @@ async function landing(){
   const pick=(f,fl)=>{frs.forEach(x=>x.classList.remove("sel"));f.classList.add("sel");fi.textContent=f.dataset.info;if(fl)flash()};
   const nowF=frs.find(f=>f.classList.contains("now"));
   if(nowF)pick(nowF,false);
-  else fi.textContent=notStarted?`⏳ কন্টেস্ট শুরু হবে ${fmt(w.start)} থেকে — আর ${bn(toStart)} দিন বাকি!`:"📪 এই সপ্তাহের কন্টেস্ট শেষ। নতুন সপ্তাহের অপেক্ষায় থাকো!";
+  else fi.textContent=notStarted?`কন্টেস্ট শুরু হবে ${fmt(w.start)} থেকে — আর ${bn(toStart)} দিন বাকি!`:" এই সপ্তাহের কন্টেস্ট শেষ আপাতত। আসছি পরের সপ্তাহে";
   const fx=nowF||(notStarted?frs[0]:frs[frs.length-1]);
   requestAnimationFrame(()=>{reel.scrollLeft=fx.offsetLeft-reel.clientWidth/2+fx.clientWidth/2});
   frs.forEach(f=>f.onclick=()=>pick(f,true));
