@@ -291,6 +291,21 @@ h1{font-size:clamp(36px,11vw,58px);line-height:1.15}
 .cover .kick{color:#ffd9a8}
 .cover h1{color:#fff;text-shadow:0 4px 26px #000a}
 .cover .sub{color:#fff;text-shadow:0 2px 12px #0008}
+   /* ===== cover alignment + typography ===== */
+.cover{align-items:stretch;padding:16px 18px 24px}
+.cv-top{display:flex;justify-content:space-between;align-items:center}
+.cv-top .ico{width:64px;height:64px;border-radius:18px;animation:none}
+.crest{width:56px;height:56px;object-fit:contain;background:#fff;border-radius:16px;padding:6px;box-shadow:0 8px 22px #0004}
+.cv-txt{text-align:left}
+.eyebrow{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:4px;font-weight:600;color:#ffd9a8;margin-bottom:10px}
+.eyebrow::before{content:"";width:28px;height:2px;background:linear-gradient(90deg,#ffd9a8,transparent)}
+.cover h1{text-align:left;line-height:1;margin:0 0 16px;font-size:inherit;color:#fff;text-shadow:none}
+.h-a{display:block;font-size:clamp(20px,6vw,28px);font-weight:500;color:#ffffffd9;letter-spacing:.5px;margin-bottom:4px}
+.h-b{display:block;font-size:clamp(46px,14vw,76px);font-weight:700;line-height:1.15;background:linear-gradient(100deg,#fff 30%,#ffd9a8 70%,#ffb3c9);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 22px #0009)}
+.cv-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;font-weight:600;font-size:15px;color:#fff;background:#ffffff1f;border:1px solid #ffffff44;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.pill.live{background:linear-gradient(135deg,#d62828,#ff3d81);border-color:transparent;font-weight:700;box-shadow:0 8px 22px #d6282866}
+.pill.live::before{content:"";width:8px;height:8px;border-radius:50%;background:#fff;animation:blink 1.1s steps(2) infinite}
 </style>
 </head>
 <body>
@@ -438,12 +453,14 @@ async function landing(){
     return `<div class="fr ${cls} ${mark}" data-info="${info}"><i>${ic}</i><b>${DAY[d.getDay()]}</b><small>${bn(d.getDate())}</small></div>`}).join("");
 
   app.innerHTML=`<div class="wrap">
-  <div class="logos"><img src="dcpc-logo.png" alt="DCPC" class="lg-l" onerror="this.style.visibility='hidden'"><img src="dc-logo.png" alt="Dhaka College" class="lg-r" onerror="this.style.visibility='hidden'"></div>
+ 
   <div class="cover"><img class="cv-img" src="hero.jpg" alt="" onerror="this.remove()">
-    <div class="cv-top">${ICON}</div>
-    <div class="cv-txt"><div class="kick">DCPC • WEEKLY</div>
-    <h1>সাপ্তাহিক ফটোগ্রাফি</h1><span class="ribbon">কন্টেস্ট</span>
-    <div class="sub">২৮ ব্যাচের জন্য!</div></div></div>
+    <div class="cv-top">${ICON}<img class="crest" src="dc-logo.png" alt="Dhaka College" onerror="this.style.visibility='hidden'"></div>
+    <div class="cv-txt">
+      <div class="eyebrow">DCPC WEEKLY CONTEST</div>
+      <h1><span class="h-a">সাপ্তাহিক</span><span class="h-b">ফটোগ্রাফি</span></h1>
+      <div class="cv-meta"><span class="pill live">কন্টেস্ট</span><span class="pill">২৮ ব্যাচের জন্য!</span></div>
+    </div></div>
   <div class="range">এই সপ্তাহ: ${fmt(w.start)} – ${fmt(w.end)}</div>
   ${w.theme?`<div class="theme"> এই সপ্তাহের থিম<b>${esc(w.theme)}</b></div>`:""}
   <div class="film"><div class="reel" id="reel">${tl}</div></div><div class="fi" id="fi"></div>
