@@ -719,10 +719,10 @@ async function admin(){
       <div class="ad-act"><button class="ghost" id="seeSite">🌐 সাইট দেখো</button><button class="ghost" id="out">⎋ Logout</button></div>
     </header>
     <nav class="ad-tabs" id="tabs">
-      <button data-t="dash" class="on">📊 ড্যাশবোর্ড</button>
-      <button data-t="judge">⚖️ বিচার</button>
-      <button data-t="month">👑 মাসের সেরা</button>
-      <button data-t="set">⚙️ সেটিংস</button>
+      <button data-t="dash" class="on"> ড্যাশবোর্ড</button>
+      <button data-t="judge">Judgement</button>
+      <button data-t="month"> মাসের সেরা</button>
+      <button data-t="set"> সেটিংস</button>
     </nav>
     <main id="pane"></main>
   </div><div id="toasts"></div><div id="modal"></div>`;
@@ -730,14 +730,14 @@ async function admin(){
 
   /* ---------- helpers ---------- */
   const toast=(t,ok=true)=>{const d=document.createElement("div");d.className="toast "+(ok?"ok":"err");d.textContent=t;$("#toasts").appendChild(d);setTimeout(()=>d.classList.add("out"),2600);setTimeout(()=>d.remove(),3000)};
-  const ask=(title,body,okLabel="নিশ্চিত")=>new Promise(res=>{const m=$("#modal");
-    m.innerHTML=`<div class="mo"><div class="mb"><h3>${title}</h3><p>${body}</p><div class="row"><button class="ghost" id="mn">বাতিল</button><button class="del" id="my">${okLabel}</button></div></div></div>`;
+  const ask=(title,body,okLabel="Confirm")=>new Promise(res=>{const m=$("#modal");
+    m.innerHTML=`<div class="mo"><div class="mb"><h3>${title}</h3><p>${body}</p><div class="row"><button class="ghost" id="mn">Cancel</button><button class="del" id="my">${okLabel}</button></div></div></div>`;
     $("#mn").onclick=()=>{m.innerHTML="";res(false)};$("#my").onclick=()=>{m.innerHTML="";res(true)}});
-  const who=x=>S.anon?"🙈 নাম গোপন":`${esc(x.name)} • রোল ${esc(x.roll)}`;
+  const who=x=>S.anon?"Hide Name":`${esc(x.name)} • Roll ${esc(x.roll)}`;
   const status=()=>{const t=iso(new Date()),W=S.w;
-    if(t<W.start)return {k:"wait",t:"⏳ শুরু হয়নি"};
-    if(t>W.close)return {k:"judge",t:"⚖️ জমা শেষ, বিচার চলছে"};
-    return {k:"open",t:"🟢 জমা চলছে"}};
+    if(t<W.start)return {k:"wait",t:" শুরু হয়নি এখনো "};
+    if(t>W.close)return {k:"judge",t:"Submission পর্ব শেষ "};
+    return {k:"open",t:"জমা চলছে"}};
   async function load(){const s=await getDocs(query(collection(db,"submissions"),where("weekId","==",S.view)));
     S.list=s.docs.map(d=>({id:d.id,rank:0,...d.data()}))}
   const flt=()=>{let a=[...S.list];
@@ -774,12 +774,12 @@ async function admin(){
       <div class="stat"><small>সাবমিশন (${fmt(S.view)} এর সপ্তাহ)</small><b data-n="${tot}">${bn(tot)}</b></div>
       <div class="stat"><small>স্কোর দেওয়া হয়েছে</small><b>${bn(sc)}<i> / ${bn(tot)}</i></b><div class="bar"><u style="width:${tot?sc/tot*100:0}%"></u></div></div>
       <div class="stat"><small>অবস্থা</small><b class="st ${st.k}">${st.t}</b></div>
-      <div class="stat"><small>জমার শেষ</small><b class="st">${left>0?bn(left)+" দিন বাকি":left===0?"আজই শেষ":"শেষ হয়েছে"}</b></div>
+      <div class="stat"><small>সাবমিশন শেষ হওয়ার</small><b class="st">${left>0?bn(left)+" দিন বাকি":left===0?"আজই শেষ":"শেষ হয়েছে"}</b></div>
     </div>
-    <div class="ad-card"><h3>📅 চলমান সপ্তাহ: ${fmt(S.w.start)} – ${fmt(S.w.end)}</h3><div class="tlw">${tl}</div></div>
-    <div class="ad-card"><h3>🎓 বিভাগ অনুযায়ী</h3>${Object.entries(byG).map(([g,n])=>`<div class="bg"><span class="bd ${g}">${GL[g]}</span><div class="bar"><u class="${g}" style="width:${n/mx*100}%"></u></div><b>${bn(n)}</b></div>`).join("")}</div>
-    <div class="ad-card"><h3>🆕 সাম্প্রতিক সাবমিশন</h3>${rec.length?`<div class="recent">${rec.map(x=>`<img src="${esc(x.url)}" data-act="open" data-id="${x.id}">`).join("")}</div>`:`<div class="none">এখনো কোনো সাবমিশন আসেনি</div>`}</div>
-    <button class="go" data-act="go" data-t="judge">⚖️ বিচারে যাও</button>`};
+    <div class="ad-card"><h3> চলমান সপ্তাহ: ${fmt(S.w.start)} – ${fmt(S.w.end)}</h3><div class="tlw">${tl}</div></div>
+    <div class="ad-card"><h3> বিভাগ অনুযায়ী</h3>${Object.entries(byG).map(([g,n])=>`<div class="bg"><span class="bd ${g}">${GL[g]}</span><div class="bar"><u class="${g}" style="width:${n/mx*100}%"></u></div><b>${bn(n)}</b></div>`).join("")}</div>
+    <div class="ad-card"><h3> সাম্প্রতিক সাবমিশন</h3>${rec.length?`<div class="recent">${rec.map(x=>`<img src="${esc(x.url)}" data-act="open" data-id="${x.id}">`).join("")}</div>`:`<div class="none">এখনো কোনো সাবমিশন আসেনি</div>`}</div>
+    <button class="go" data-act="go" data-t="judge">Go to judgement</button>`};
 
   /* ---------- judging ---------- */
   const card=(x,i)=>`<div class="jc ${x.rank?"w":""}" draggable="true" data-id="${x.id}">
@@ -798,23 +798,23 @@ async function admin(){
     pane.innerHTML=`
     <div class="tool">
       <div class="wk"><button class="ghost" data-act="wk" data-d="-7">‹</button><input type="date" id="vw" value="${S.view}"><button class="ghost" data-act="wk" data-d="7">›</button><button class="ghost" data-act="wkNow">এই সপ্তাহ</button></div>
-      <button class="ghost" data-act="anon">${S.anon?"👁️ নাম দেখাও":"🙈 নাম লুকাও"}</button>
+      <button class="ghost" data-act="anon">${S.anon?"Show name":"Hide name"}</button>
     </div>
     <div class="tool">
       <div class="fchips">${[["all","সব"],["science","বিজ্ঞান"],["business","ব্যবসায়"],["humanities","মানবিক"]].map(([g,t])=>`<button class="${S.g===g?"on":""}" data-act="g" data-g="${g}">${t}</button>`).join("")}</div>
       <select id="sec"><option value="all">সব সেকশন</option>${secs.map(s=>`<option ${S.sec===s?"selected":""}>${s}</option>`).join("")}</select>
       <select id="sort"><option value="score" ${S.sort==="score"?"selected":""}>স্কোর ↓</option><option value="new" ${S.sort==="new"?"selected":""}>নতুন আগে</option><option value="roll" ${S.sort==="roll"?"selected":""}>রোল ↑</option></select>
-      <input id="q" placeholder="🔍 নাম বা রোল" value="${esc(S.q)}">
+      <input id="q" placeholder="name or roll" value="${esc(S.q)}">
     </div>
     <div class="prog" id="prog">${progHtml()}</div>
     <div class="podium">${podium()}</div>
     <div class="jgrid" id="grid">${gridHtml(flt())}</div>
     <div class="dock">
-      <button class="ghost" data-act="auto">⚡ স্কোর থেকে Top 3</button>
-      <button class="ghost" data-act="reset">↺ র‍্যাংক রিসেট</button>
-      <button class="gold" data-act="ann">📣 ঘোষণা লাইভ</button>
-      <button class="ghost" data-act="hide">🙈 ঘোষণা সরাও</button>
-      <button class="del" data-act="finalize">✅ Finalize</button>
+      <button class="ghost" data-act="auto">Top 3 from score</button>
+      <button class="ghost" data-act="reset">Rank reset</button>
+      <button class="gold" data-act="ann">Live the announcement</button>
+      <button class="ghost" data-act="hide">Remove announcement</button>
+      <button class="del" data-act="finalize"> Finalize</button>
     </div>`}
   async function setRank(id,r){
     const x=S.list.find(i=>i.id===id);if(!x)return;
@@ -837,7 +837,7 @@ async function admin(){
     if(!sc.length)return toast("আগে ছবিগুলোতে স্কোর দাও",false);
     const top=sc.slice(0,3).map(x=>x.id);
     for(const x of S.list){const r=top.indexOf(x.id)+1;if((x.rank||0)!==r){x.rank=r;await updateDoc(doc(db,"submissions",x.id),{rank:r,winner:r>0})}}
-    drawJudge();toast("Top 3 বাছাই হয়েছে ✅ (দরকার হলে টেনে বদলাও)")}
+    drawJudge();toast("Top 3 বাছাই হয়েছে  (দরকার হলে টেনে বদলাও)")}
   async function resetRanks(){
     for(const x of S.list)if(x.rank>0){x.rank=0;await updateDoc(doc(db,"submissions",x.id),{rank:0,winner:false})}
     drawJudge();toast("র‍্যাংক রিসেট হয়েছে")}
