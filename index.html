@@ -555,7 +555,7 @@ async function landing(){
     const cls=s===todayIso?"now":s<todayIso?"past":"";
     const mark=s===w.close?"mark":"";
     const ic=s===w.close?"📤":s===w.end?"🏆":i===0?"🚀":"📷";
-    const info=s===w.close?"ছবি জমার শেষ দিন!অংশগ্রহণ করেছো তো?":s===w.end?"আজ বিজয়ী ঘোষণা — সাইটে চোখ রেখো কিন্তু!":i===0?" আজকে contest এর প্রথম দিন! থিম অনুযায়ী ছবি তুলতে প্রস্তুত তো?":s>w.close?"ফলাফলের অপেক্ষা...":"ছবি জমা দাও এখনই";
+    const info=s===w.close?"ছবি জমার শেষ দিন!অংশগ্রহণ করেছো তো?":s===w.end?"আজ Winner ঘোষণা — সাইটে চোখ রেখো কিন্তু!":i===0?" আজকে contest এর প্রথম দিন! ছবি তুলতে প্রস্তুত তো?":s>w.close?"ফলাফলের অপেক্ষা...":"ছবি জমা দাও এখনই";
     return `<div class="fr ${cls} ${mark}" data-info="${info}"><i>${ic}</i><b>${DAY[d.getDay()]}</b><small>${bn(d.getDate())}</small></div>`}).join("");
 
   app.innerHTML=`<div class="wrap">
@@ -568,7 +568,7 @@ async function landing(){
       <div class="cv-meta"><span class="pill live">কন্টেস্ট</span><span class="pill">DCPC 28</span></div>
     </div></div>
   <div class="range">এই সপ্তাহ: ${fmt(w.start)} – ${fmt(w.end)}</div>
-  ${w.theme?`<div class="theme"> এই সপ্তাহের থিম<b>${esc(w.theme)}</b></div>`:""}
+
   <div class="film"><div class="reel" id="reel">${tl}</div></div><div class="fi" id="fi"></div>
   ${ann?`<div class="stage-card"><h2> এবারের বিজয়ী ঘোষণা!</h2><p>কার্ডে ট্যাপ করো বা নিচের বাটনে চাপ দাও</p>
     <div class="slots" id="slots"></div>
@@ -912,7 +912,7 @@ async function admin(){
     const W=S.w;
     pane.innerHTML=`<div class="ad-card"><h3>📅 কন্টেস্ট সপ্তাহ</h3>
       <div class="three"><div><label>শুরু</label><input type="date" id="s" value="${W.start}"></div><div><label>শেষ</label><input type="date" id="e" value="${W.end}"></div><div><label>জমার শেষ দিন</label><input type="date" id="c" value="${W.close}"></div></div>
-      <label>এই সপ্তাহের থিম</label><input id="th" maxlength="60" value="${esc(W.theme||"")}" placeholder="যেমন: বৃষ্টির দিন">
+
       <div class="prev" id="prev"></div>
       <div class="row"><button class="ghost" id="nx">➡️ পরের সপ্তাহের প্রিসেট</button><button id="sv">💾 Save ও লাইভ করো</button></div></div>
       <div class="ad-card"><h3>ℹ️ পয়েন্ট</h3><p class="muted">🥇 ${bn(POINTS[1])} • 🥈 ${bn(POINTS[2])} • 🥉 ${bn(POINTS[3])} পয়েন্ট। বদলাতে চাইলে কোডের <b>POINTS</b> লাইন বদলাও।</p></div>`;
@@ -927,12 +927,12 @@ async function admin(){
     $("#e").onchange=prev;$("#c").onchange=prev;prev();
     $("#nx").onclick=()=>{const ns=addDays(parse($("#e").value||W.end),1);
       $("#s").value=iso(ns);$("#e").value=iso(addDays(ns,6));$("#c").value=iso(addDays(ns,5));prev();toast("পরের সপ্তাহের তারিখ বসানো হয়েছে, Save চাপো")};
-    $("#sv").onclick=async()=>{const s=$("#s").value,e=$("#e").value,c=$("#c").value,th=$("#th").value.trim();
+    $("#sv").onclick=async()=>{const s=$("#s").value,e=$("#e").value,c=$("#c").value;
       if(!s||!e||!c)return toast("তিনটি তারিখই দাও",false);
       if(!(s<=c&&c<=e))return toast("ক্রম হতে হবে: শুরু ≤ জমার শেষ ≤ শেষ",false);
       try{
-        await setDoc(doc(db,"config","week"),{start:s,end:e,close:c,theme:th,startAt:parse(s),endAt:addDays(parse(e),1),closeAt:addDays(parse(c),1)});
-        S.w={...S.w,start:s,end:e,close:c,theme:th};S.view=s;await load();
+        await setDoc(doc(db,"config","week"),{start:s,end:e,close:c,startAt:parse(s),endAt:addDays(parse(e),1),closeAt:addDays(parse(c),1)});
+        S.w={...S.w,start:s,end:e,close:c};S.view=s;await load();
         toast("Saved ✅ সাইটে লাইভ হয়ে গেছে");confetti(60);
       }catch(err){toast("Save হয়নি: "+(err.code||err.message),false)}}}
 
