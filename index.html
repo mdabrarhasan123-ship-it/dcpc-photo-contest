@@ -585,6 +585,8 @@ async function landing(){
   <form id="f">
     <label>নাম</label><input id="name" required maxlength="50" placeholder="তোমার পুরো নাম">
     <label>রোল নম্বর</label><input id="roll" required maxlength="12" inputmode="numeric" placeholder="যেমন : ০০৪">
+    <label>ফোন নম্বর</label><input id="phone" required maxlength="11" inputmode="numeric" placeholder="01XXXXXXXXX">
+    <label>Gmail</label><input id="email" type="email" required maxlength="70" placeholder="yourname@gmail.com">
     <label>বিভাগ</label>
     <div class="chips" id="grp">
       <button type="button" class="chip" data-g="science"> বিজ্ঞান</button>
@@ -651,6 +653,10 @@ async function landing(){
     const bad=t=>{m.className="msg err";m.textContent=t};
     const roll=String(parseInt($("#roll").value.replace(/\D/g,""),10)||"");
     if(!roll)return bad("সঠিক রোল দাও");
+    const phone=$("#phone").value.trim().replace(/\D/g,"");
+    if(!/^01[3-9]\d{8}$/.test(phone))return bad("সঠিক ১১ ডিজিটের মোবাইল নম্বর দাও");
+    const email=$("#email").value.trim().toLowerCase();
+    if(!/^[^@\s]+@gmail\.com$/.test(email))return bad("সঠিক Gmail দাও (যেমন: name@gmail.com)");
     if(!grp)return bad("তোমার বিভাগ সিলেক্ট করো");
     if(!sec)return bad("তোমার সেকশন সিলেক্ট করো");
     const [lo,hi]=RANGE(grp,sec);
@@ -658,7 +664,7 @@ async function landing(){
     b.disabled=true;b.textContent="আপলোড হচ্ছে...";
     try{
       const url=await upload(blob);
-      await setDoc(doc(db,"submissions",`${w.start}_${grp}_${roll}`),{weekId:w.start,name:$("#name").value.trim(),roll,group:grp,section:sec,caption:$("#cap").value.trim(),url,winner:false,createdAt:serverTimestamp()});
+      await setDoc(doc(db,"submissions",`${w.start}_${grp}_${roll}`),{weekId:w.start,name:$("#name").value.trim(),roll,phone,email,group:grp,section:sec,caption:$("#cap").value.trim(),url,winner:false,createdAt:serverTimestamp()});
       flash();confetti(110);
       $("#f").reset();blob=null;grp="";sec="";
       document.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));secWrap.classList.add("hidden");$("#rh").classList.remove("show");
@@ -871,6 +877,7 @@ async function admin(){
     $("#modal").innerHTML=`<div class="vw"><button class="vw-x ghost" data-v="close">✕</button><button class="vw-n l" data-v="prev">‹</button><button class="vw-n r" data-v="next">›</button>
       <img src="${esc(x.url)}" alt="">
       <div class="vw-i"><b>${who(x)}</b>${S.anon?"":badge(x)}<span>${bn(vi+1)}/${bn(vl.length)}</span>
+        ${S.anon?"":`<small style="display:block;margin-top:4px">📞 <a href="tel:${esc(x.phone||"")}" style="color:inherit">${esc(x.phone||"—")}</a> • ✉️ ${esc(x.email||"—")}</small>`}
         <div class="scr"><input type="number" min="0" max="100" step="0.5" value="${x.score??""}" placeholder="নম্বর" data-vsc></div>
         <div class="row">${[1,2,3].map(r=>`<button class="${x.rank===r?"gold":""}" data-v="rank" data-r="${r}">${MEDAL[r]}</button>`).join("")}<button class="ghost" data-v="rank" data-r="0">✕</button></div></div>
       ${x.caption?`<div>${esc(x.caption)}</div>`:""}
